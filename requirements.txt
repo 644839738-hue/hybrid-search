@@ -1,0 +1,30 @@
+langchain
+langchain-core
+langchain-community
+langchain-openai
+langchain-huggingface
+langchain-text-splitters
+langchain-chroma
+python-dotenv
+streamlit
+pypdf
+pytesseract
+pillow
+pymupdf
+tenacity
+pyyaml
+
+# Hybrid Search & Re-ranking
+rank-bm25>=0.2.2
+cohere>=5.0.0
+sentence-transformers>=2.2.0
+torch
+torchvision
+
+# Testing dependencies
+pytest>=8.0.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+
+sentence-transformers
+numpy

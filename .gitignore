@@ -1,0 +1,84 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+virtualenv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+.Ds_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Logs
+*.log
+logs/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# ChromaDB Vector Store
+# Don't commit the vector database - it can be large and should be generated locally
+chroma/
+chroma_db/
+*.chroma
+
+# Conversation History
+# Don't commit conversation JSON files
+conversation_history/
+
+# A/B Testing Results
+# Don't commit A/B testing experiment data
+ab_testing_results/
+
+# Uploaded Documents
+# Don't commit uploaded PDF files
+uploads/
+*.pdf
+
+# OS
+Thumbs.db
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Claude Code
+# Local development context and learnings (not for version control)
+.claude/
+
+# User data files
+data/*.json

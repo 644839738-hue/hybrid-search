@@ -1,0 +1,226 @@
+# 语义搜索引擎配置
+# =====================================
+
+# 模型配置
+models:
+  embedding:
+    # 提供商: "openai" / "huggingface" / "deepseek"
+    #   - openai: 需在 .env 中配置 OPENAI_API_KEY
+    #   - huggingface: 本地模型，无需 API Key
+    #   - deepseek: 需在 .env 中配置 DEEPSEEK_API_KEY（兼容 OpenAI API）
+    provider: "huggingface"
+    # Embedding 模型名称:
+    #   - openai: "text-embedding-3-large", "text-embedding-3-small" 等
+    #   - huggingface: "sentence-transformers/all-MiniLM-L6-v2", "BAAI/bge-small-en" 等
+    #   - deepseek: "deepseek-embedding" 或其他 DeepSeek 提供的 embedding 模型
+    name: "sentence-transformers/all-MiniLM-L6-v2"
+    # API 基础地址（仅 deepseek 时使用）
+    base_url: "https://api.deepseek.com"
+
+  chat:
+    # 提供商: "openai" / "deepseek"
+    #   - openai: 需在 .env 中配置 OPENAI_API_KEY
+    #   - deepseek: 需在 .env 中配置 DEEPSEEK_API_KEY（兼容 OpenAI API）
+    provider: "deepseek"
+    name: "deepseek-chat"
+    temperature: 0.0
+    # API 基础地址（仅 deepseek 时使用）
+    base_url: "https://api.deepseek.com"
+
+# 文档处理配置
+document_processing:
+  # 切分策略: "fixed_size" / "nlp_dynamic"
+  #   - fixed_size: 基于字符数固定长度切分（RecursiveCharacterTextSplitter）
+  #   - nlp_dynamic: 基于 NLP 语义动态切分 + 句子级重叠窗口
+  chunking_strategy: "nlp_dynamic"
+
+  # 基础切分参数（两种策略通用）
+  chunk_size: 800          # 目标文本块大小（字符数）
+  chunk_overlap: 150       # 相邻块重叠长度（字符数）
+  add_start_index: true
+
+  # NLP 动态切分专用参数（仅 chunking_strategy = "nlp_dynamic" 时生效）
+  min_chunk_size: 300      # 最小块大小，低于此值即使语义不同也会合并
+  max_chunk_size: 1200     # 最大块大小，超过此值强制断句
+
+  nlp:
+    # 句子分割器: "regex" 使用正则表达式分割中英文句子
+    sentence_splitter: "regex"
+
+    # 是否启用语义相似度合并（将语义相近的句子合并到同一块）
+    enable_semantic_similarity: true
+
+    # 语义相似度阈值 (0-1)，句子与当前块质心的余弦相似度低于此值将开始新块
+    semantic_similarity_threshold: 0.55
+
+    # 语义相似度计算使用的嵌入模型（与主 embedding 模型可不同）
+    semantic_embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+
+    # 重叠窗口是否按完整句子保留（true=句子级, false=字符级截断）
+    overlap_by_sentence: true
+
+    # 是否保留标题/章节标记（识别到的标题会作为新块的起点）
+    preserve_headings: true
+
+  # OCR 配置（扫描版 PDF 自动识别）
+  enable_ocr: true
+  ocr_engine: "tesseract"
+  # OCR 语言: "chi_sim+eng" 中英文, "eng" 仅英文, "chi_sim" 仅简体中文
+  ocr_languages: "chi_sim+eng"
+  ocr_dpi: 200
+  # Windows Tesseract 安装路径（根据实际安装位置修改）
+  tesseract_cmd: "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+
+# 向量存储配置
+vector_store:
+  provider: "chroma"
+  collection_name: "semantic_search_docs_streamlit"
+  persist_directory: "./chroma/db"
+
+  # ChromaDB 连接模式
+  # 设置 use_docker: true 以连接 ChromaDB Docker 容器
+  # 运行: docker run -d -p 8000:8000 chromadb/chroma
+  use_docker: true
+  chroma_host: "192.168.159.143"
+  chroma_port: 8000
+
+  # 检索设置
+  search_type: "similarity"
+  search_k: 3  # 返回的文本块数量
+
+# 混合检索配置
+hybrid_retrieval:
+  # 启用混合搜索（BM25 + 语义搜索）
+  enabled: true
+
+  # 检索方式: "semantic" / "bm25" / "hybrid"
+  default_method: "hybrid"
+
+  # 混合模式下语义搜索的权重 (0-1)
+  # 0 = 仅 BM25, 1 = 仅语义搜索, 0.5 = 等权重
+  alpha: 0.5
+
+  # RRF 融合常数（通常为 60）
+  rrf_k: 60
+
+  # BM25 参数
+  bm25:
+    k1: 1.5  # 词频饱和度
+    b: 0.75  # 长度归一化
+
+  # 重排序配置
+  reranking:
+    enabled: true
+    # 提供商选项:
+    #   - "auto": 优先尝试 Jina (本地)，回退到 Cohere (云端)
+    #   - "jina": 强制使用本地 Jina 模型 (需 sentence-transformers)
+    #   - "cohere": 强制使用云端 Cohere API (需 COHERE_API_KEY)
+    provider: "auto"
+
+    # Cohere 模型（使用 cohere 时）
+    cohere_model: "rerank-english-v3.0"
+
+    # Jina 模型（使用 jina 时）
+    jina_model: "jinaai/jina-reranker-v1-tiny-en"
+
+    # 重排序前获取的候选数量倍率
+    fetch_k_multiplier: 3
+
+# 检索预设配置
+# 针对不同场景预配置的策略
+retrieval_presets:
+  high_precision:
+    display_name: "高精度"
+    description: "更少的结果，更高的相关性。适合精确问题。"
+    icon: "🎯"
+    k: 3
+    alpha: 0.7
+    rerank: true
+    method: "hybrid"
+
+  balanced:
+    display_name: "平衡"
+    description: "精度与覆盖率的良好平衡。推荐默认使用。"
+    icon: "⚖️"
+    k: 5
+    alpha: 0.5
+    rerank: true
+    method: "hybrid"
+
+  high_recall:
+    display_name: "高召回"
+    description: "更多结果，更广覆盖。适合探索性搜索。"
+    icon: "🔍"
+    k: 10
+    alpha: 0.3
+    rerank: false
+    method: "hybrid"
+
+  # 默认使用的预设
+  default_preset: "balanced"
+
+# 对话历史配置
+conversation:
+  # 启用对话历史
+  enabled: true
+
+  # 对话 JSON 文件存储目录
+  storage_dir: "./conversation_history"
+
+  # 每个会话最多保留的查询数
+  max_history: 50
+
+  # 启用追问优化
+  follow_up_optimization: true
+
+  # 追问上下文中使用的最近问答对数
+  context_window: 3
+
+# A/B 测试配置
+ab_testing:
+  # 启用 A/B 测试
+  enabled: true
+
+  # 实验结果存储目录
+  storage_dir: "./ab_testing_results"
+
+  # 默认对比方案
+  default_variants:
+    - "semantic"
+    - "bm25"
+    - "hybrid"
+    - "hybrid_rerank"
+
+# 重试配置
+retry:
+  max_attempts: 3
+  min_wait: 2  # 秒
+  max_wait: 10  # 秒
+  multiplier: 1
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "semantic_search.log"
+
+# 系统提示词
+prompts:
+  qa_system: |
+    你是一个乐于助人的助手。
+    请仅使用以下信息 {document} 来回答下面的问题 {question}。
+    如果你无法回答问题，请直接说你无法回答该问题。
+
+  # 追问提示词模板
+  follow_up_system: |
+    你是一个正在参与文档对话的乐于助人的助手。
+    请利用之前的对话上下文来理解引用内容并保持连贯性。
+
+    之前的对话:
+    {conversation_context}
+
+    文档上下文:
+    {document}
+
+    请回答以下问题: {question}
+    如果你无法回答问题，请直接说你无法回答该问题。
